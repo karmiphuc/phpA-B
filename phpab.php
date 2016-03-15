@@ -120,14 +120,15 @@ class phpab
 			}
 			elseif($auto_fail === FALSE && $async !== FALSE)
 			{
-				$this->content = substr($this->content, 0, $async - 1) . '_gaq.push(["_setCustomVar", ' . $this->ga_slot . ', "' . $this->test_name . '", "' . $this->current_variation . '", 3]);' . substr($this->content, $async);
+				$this->content = substr($this->content, 0, $async - 1) . ' _gaq.push(["_setCustomVar", ' . $this->ga_slot . ', "' . $this->test_name . '", "' . $this->current_variation . '", 3]); ' . substr($this->content, $async);
 			}
 		}
 	}
 	
 	private function record_user_segment ()
 	{
-		setcookie($this->tag . '-' . $this->test_name, $this->current_variation, time() + (60 * 60 * 24 * 365), '/', $this->test_domain);
+		$cookie_domain = (($colon_position = strrpos($this->test_domain, ":")) === false) ? $this->test_domain : substr($this->test_domain, 0, $colon_position);
+        	setcookie($this->tag . '-' . $this->test_name, $this->current_variation, time() + (60 * 60 * 24 * 365), '/', $cookie_domain);
 	}
 	
 	public function set_domain ($d)
@@ -242,8 +243,12 @@ class phpab
 		}
 		unset($tmp);
 		
-		$this->content = str_replace('</body>', '<!--A/B tests active with phpA/B ' . $this->version . '--></body>', $this->content);
-		
+		$pos = strrpos($this->content, '</body>');
+		if($pos !== false)
+		{
+			$this->content = substr_replace($this->content, '<!--A/B tests active with phpA/B ' . $this->version . '--></body>', $pos, strlen('</body>'));
+		}
+
 		$this->content = str_replace('{' . $this->tag . ' ' . $this->test_name . ' current_varation}', $this->current_variation, $this->content);
 		
 		if($this->trial_mode != TRUE)
